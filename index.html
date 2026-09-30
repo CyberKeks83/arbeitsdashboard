@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arbeitsdashboard</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#111827">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#172033;--muted:#667085;--line:#e4e7ec;--blue:#2563eb;--red:#dc2626;--green:#16a34a;--amber:#d97706}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}aside{background:#111827;color:white;padding:24px 16px}
+.brand{font-size:20px;font-weight:800;margin-bottom:26px}nav button{width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:11px;border-radius:9px;margin:3px 0;cursor:pointer}
+nav button.on,nav button:hover{background:#1f2937;color:white}main{padding:28px;max-width:1500px;width:100%;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}h1{margin:0;font-size:27px}h2{font-size:18px;margin:0 0 14px}.muted{color:var(--muted);font-size:13px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.card,.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:17px}
+.card b{display:block;font-size:28px;margin-top:6px}.section{margin-top:18px}.two{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+button{font:inherit}.btn{border:0;border-radius:8px;padding:9px 12px;cursor:pointer;background:#e5e7eb}.primary{background:var(--blue);color:white}.ok{background:var(--green);color:white}.danger{background:var(--red);color:white}
+.form{display:grid;grid-template-columns:2fr 1fr 1.3fr 1fr;gap:10px}input,select,textarea{font:inherit;width:100%;border:1px solid #d0d5dd;border-radius:8px;padding:10px;background:white}textarea{min-height:75px}.full{grid-column:1/-1}
+.task{display:grid;grid-template-columns:1fr auto;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}.task:last-child{border:0}.title{font-weight:750}.meta{font-size:12px;color:var(--muted);margin-top:5px}.badge{display:inline-block;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700}.high{background:#fee2e2;color:#991b1b}.medium{background:#fef3c7;color:#92400e}.low{background:#dcfce7;color:#166534}.late{color:var(--red);font-weight:700}.actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.timer{font-size:37px;font-weight:800;font-variant-numeric:tabular-nums}.hidden{display:none}.empty{padding:22px;text-align:center;color:var(--muted)}
+.focus{border:2px solid #93c5fd;border-radius:10px;padding:10px}.pomobox{margin-top:10px;padding:10px;background:#eff6ff;border-radius:9px}.pomoTime{font-size:24px;font-weight:800}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;font-size:13px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.app{display:block}aside{padding:14px;height:auto}nav{display:flex;overflow:auto}.brand{margin-bottom:8px}nav button{white-space:nowrap}main{padding:15px}.form{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body><div class="app">
+<aside><div class="brand">Arbeitsdashboard</div><nav>
+<button class="on" data-page="dashboard">Dashboard</button><button data-page="tasks">Aufgaben</button><button data-page="report">Tagesauswertung</button><button data-page="history">Historie</button>
+</nav></aside>
+<main>
+<header><div><h1 id="head">Dashboard</h1><div class="muted" id="date"></div></div><button class="btn primary" onclick="go('tasks');setTimeout(()=>titleEl.focus(),50)">+ Neues To-do</button></header>
+
+<section id="dashboard" class="page">
+<div class="cards">
+<div class="card"><span class="muted">Offen</span><b id="ko">0</b></div><div class="card"><span class="muted">Erledigt heute</span><b id="kd">0</b></div>
+<div class="card"><span class="muted">In Bearbeitung</span><b id="ka">0</b></div><div class="card"><span class="muted">Heute fällig</span><b id="kf">0</b></div>
+<div class="card"><span class="muted">Überfällig</span><b id="kl">0</b></div>
+</div>
+<div class="section two"><div class="panel"><h2>Aktuelle Aufgabe</h2><div id="current"></div></div>
+<div class="panel"><h2>Gemessene Arbeitszeit heute</h2><div class="timer" id="workToday">00:00:00</div><div class="muted">Zeit aller heute erledigten Aufgaben plus aktuell laufender Aufgabe</div></div></div>
+<div class="section panel"><h2>Offene Aufgaben nach Fälligkeit</h2><div id="dashList"></div></div>
+</section>
+
+<section id="tasks" class="page hidden">
+<div class="panel"><h2>Neues To-do hinzufügen</h2><div class="form">
+<div><div class="muted">Aufgabe</div><input id="titleEl" placeholder="z. B. Angebot Kanada erstellen"></div>
+<div><div class="muted">Priorität</div><select id="prio"><option value="high">Hoch</option><option value="medium" selected>Mittel</option><option value="low">Niedrig</option></select></div>
+<div><div class="muted">Erledigt bis</div><input id="due" type="datetime-local"></div>
+<div><div class="muted">Arbeitsmodus</div><select id="pomo"><option value="0">Normal</option><option value="25">Pomodoro 25</option><option value="50">Pomodoro 50</option></select></div>
+<div class="full"><div class="muted">Notiz / Bemerkung</div><textarea id="note" placeholder="Optional"></textarea></div>
+</div><div style="margin-top:10px"><button class="btn primary" onclick="add()">Aufgabe hinzufügen</button></div></div>
+<div class="section panel"><div style="display:flex;justify-content:space-between;gap:10px"><h2>Aufgaben</h2><select id="filter" onchange="render()" style="width:auto"><option value="all">Alle</option><option value="open">Offen</option><option value="active">In Bearbeitung</option><option value="done">Erledigt</option><option value="late">Überfällig</option></select></div><div id="list"></div></div>
+</section>
+
+<section id="report" class="page hidden">
+<div class="cards" style="grid-template-columns:repeat(4,1fr)"><div class="card"><span class="muted">Erledigt</span><b id="rd">0</b></div><div class="card"><span class="muted">Zeit gesamt</span><b id="rt">0m</b></div><div class="card"><span class="muted">Ø je Aufgabe</span><b id="ra">0m</b></div><div class="card"><span class="muted">Pomodoro Runden</span><b id="rp">0</b></div></div>
+<div class="section panel"><div class="actions"><button class="btn primary" onclick="csv()">Tagesauswertung CSV</button><button class="btn" onclick="backup()">Vollständiges Backup JSON</button></div></div>
+<div class="section panel"><h2>Heute abgeschlossen</h2><div id="reportList"></div></div>
+</section>
+
+<section id="history" class="page hidden"><div class="panel"><h2>Historie</h2><div id="hist"></div></div></section>
+</main></div>
+<script>
+const K='arbeitsdashboard_v2'; let tasks=JSON.parse(localStorage.getItem(K)||'[]'), active=null;
+const $=id=>document.getElementById(id), titleEl=$('titleEl');
+function save(){localStorage.setItem(K,JSON.stringify(tasks))}
+function day(){return new Date().toISOString().slice(0,10)}
+function fmt(s){s=Math.max(0,Math.floor(s||0));return [Math.floor(s/3600),Math.floor(s%3600/60),s%60].map(x=>String(x).padStart(2,'0')).join(':')}
+function short(s){return Math.floor((s||0)/60)+'m '+Math.floor((s||0)%60)+'s'}
+function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sec(t){return (t.total||0)+(active===t.id?Math.floor((Date.now()-t.started)/1000):0)}
+function late(t){return !t.done&&t.due&&new Date(t.due)<new Date()}
+function pl(p){return p==='high'?'Hoch':p==='low'?'Niedrig':'Mittel'}
+function add(){let v=titleEl.value.trim();if(!v)return;tasks.push({id:crypto.randomUUID(),title:v,priority:$('prio').value,due:$('due').value,pomo:+$('pomo').value,note:$('note').value,total:0,created:new Date().toISOString(),done:false,rounds:0,completion:''});save();titleEl.value='';$('due').value='';$('note').value='';render()}
+function start(id){if(active===id){pause(id);return}if(active)pause(active);let t=tasks.find(x=>x.id===id);if(!t||t.done)return;active=id;t.started=Date.now();save();render()}
+function pause(id){let t=tasks.find(x=>x.id===id);if(!t||active!==id)return;t.total=(t.total||0)+Math.floor((Date.now()-t.started)/1000);delete t.started;active=null;save();render()}
+function done(id){let t=tasks.find(x=>x.id===id);if(!t)return;if(active===id)pause(id);let n=prompt('Abschlussnotiz oder Bemerkung (optional):',t.completion||'');t.completion=n||'';t.done=true;t.doneAt=new Date().toISOString();save();render()}
+function del(id){if(confirm('Aufgabe löschen?')){if(active===id)active=null;tasks=tasks.filter(x=>x.id!==id);save();render()}}
+function pomoRemain(t){if(!t.pomo)return null;let block=t.pomo*60, elapsed=sec(t), rem=block-(elapsed%block);return rem===block&&elapsed>0?0:rem}
+function html(t){let d=t.due?new Date(t.due).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'keine Frist',run=active===t.id,rem=pomoRemain(t);
+return `<div class="task ${run?'focus':''}"><div><div class="title">${esc(t.title)}</div><div class="meta"><span class="badge ${t.priority}">${pl(t.priority)}</span> Erledigt bis: <span class="${late(t)?'late':''}">${d}</span> · Bearbeitungszeit: <b>${fmt(sec(t))}</b></div>${t.note?`<div class="muted" style="margin-top:5px">${esc(t.note)}</div>`:''}${run&&t.pomo?`<div class="pomobox">Pomodoro ${t.pomo} · Fokus Countdown <span class="pomoTime">${fmt(rem)}</span></div>`:''}${t.done&&t.completion?`<div class="muted" style="margin-top:5px">Abschluss: ${esc(t.completion)}</div>`:''}</div><div class="actions">${!t.done?`<button class="btn ${run?'danger':'primary'}" onclick="start('${t.id}')">${run?'Pause':'Start'}</button><button class="btn ok" onclick="done('${t.id}')">Erledigt</button>`:'<span class="badge low">✓ Erledigt</span>'}<button class="btn" onclick="del('${t.id}')">×</button></div></div>`}
+function render(){
+let f=$('filter').value, arr=tasks.filter(t=>f==='all'||f==='open'&&!t.done||f==='active'&&active===t.id||f==='done'&&t.done||f==='late'&&late(t));arr.sort((a,b)=>(a.done-b.done)||((a.due||'9999').localeCompare(b.due||'9999'))||({high:0,medium:1,low:2}[a.priority]-{high:0,medium:1,low:2}[b.priority]));$('list').innerHTML=arr.length?arr.map(html).join(''):'<div class="empty">Keine Aufgaben.</div>';
+let td=day(), open=tasks.filter(t=>!t.done), dn=tasks.filter(t=>t.done&&t.doneAt?.slice(0,10)===td);$('ko').textContent=open.length;$('kd').textContent=dn.length;$('ka').textContent=active?1:0;$('kf').textContent=tasks.filter(t=>!t.done&&t.due?.slice(0,10)===td).length;$('kl').textContent=tasks.filter(late).length;
+let cur=tasks.find(t=>t.id===active);$('current').innerHTML=cur?html(cur):'<div class="empty">Aktuell läuft keine Aufgabe.</div>';
+let dl=open.slice().sort((a,b)=>Number(late(b))-Number(late(a))||((a.due||'9999').localeCompare(b.due||'9999'))).slice(0,8);$('dashList').innerHTML=dl.length?dl.map(html).join(''):'<div class="empty">Keine offenen Aufgaben.</div>';
+let tot=dn.reduce((s,t)=>s+(t.total||0),0)+(cur?sec(cur):0);$('workToday').textContent=fmt(tot);
+let totalDone=dn.reduce((s,t)=>s+(t.total||0),0);$('rd').textContent=dn.length;$('rt').textContent=short(totalDone);$('ra').textContent=short(dn.length?totalDone/dn.length:0);$('rp').textContent=dn.reduce((s,t)=>s+(t.rounds||0),0);
+$('reportList').innerHTML=dn.length?`<table><tr><th>Aufgabe</th><th>Priorität</th><th>Zeit</th><th>Bemerkung</th></tr>${dn.map(t=>`<tr><td>${esc(t.title)}</td><td>${pl(t.priority)}</td><td>${fmt(t.total)}</td><td>${esc(t.completion)}</td></tr>`).join('')}</table>`:'<div class="empty">Heute noch nichts abgeschlossen.</div>';
+let groups={};tasks.filter(t=>t.done).sort((a,b)=>b.doneAt.localeCompare(a.doneAt)).forEach(t=>(groups[t.doneAt.slice(0,10)]??=[]).push(t));$('hist').innerHTML=Object.entries(groups).map(([d,a])=>`<h3>${new Date(d+'T12:00').toLocaleDateString('de-DE')}</h3>${a.map(html).join('')}`).join('')||'<div class="empty">Noch keine Historie.</div>';
+}
+function go(p){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(p).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x.dataset.page===p));$('head').textContent={dashboard:'Dashboard',tasks:'Aufgaben',report:'Tagesauswertung',history:'Historie'}[p]}
+function download(name,type,data){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function csv(){let a=tasks.filter(t=>t.done&&t.doneAt?.slice(0,10)===day()),r=[['Aufgabe','Priorität','Fällig','Zeit Sekunden','Zeit','Abschlussnotiz'],...a.map(t=>[t.title,pl(t.priority),t.due||'',t.total||0,fmt(t.total),t.completion||''])];download('Tagesauswertung_'+day()+'.csv','text/csv;charset=utf-8','\ufeff'+r.map(x=>x.map(v=>`"${String(v).replaceAll('"','""')}"`).join(';')).join('\n'))}
+function backup(){download('Arbeitsdashboard_Backup_'+day()+'.json','application/json',JSON.stringify(tasks,null,2))}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));$('date').textContent=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+setInterval(()=>{if(active)render()},1000);render();
+if ('serviceWorker' in navigator) { window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js')); }
+</script></body></html>
